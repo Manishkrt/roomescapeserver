@@ -77,7 +77,7 @@ export const createGame = async (req, res) => {
 export const getAllGames = async (req, res) => {
   try {
     const games = await GameModel.find();
-    res.status(200).json(games);
+    return res.status(200).json(games);
   } catch (error) {
     console.error('Error fetching games:', error);
     res.status(500).json({ error: 'Server error' });
