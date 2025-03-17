@@ -47,9 +47,9 @@ app.use('/api/v1/coupon', couponRouter)
 app.use('/api/v1/bulk-booking', bulkBookingQueryRouter)  
 app.use('/api/v1/event', eventRouter)  
 // app.use('/api/v1/event', eventQueryRouter)  
-app.get('/', (req, res)=>{ 
-    res.send('Server is running');
-})
+// app.get('/', (req, res)=>{ 
+//     res.send('Server is running');
+// })
 
 
 
