@@ -23,16 +23,18 @@ const PORT = process.env.PORT || 8000
 
 connectDB()
 const app = express()
+
+
+app.use(cookieParser())
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cors({
     origin: true, // Allows all origins dynamically
     credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-app.use(cookieParser())
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 
 app.use('/api/v1/user', userRouter)  
