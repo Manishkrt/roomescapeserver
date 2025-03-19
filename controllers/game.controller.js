@@ -93,6 +93,16 @@ export const getAllClientsGames = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+export const singleGame = async (req, res) => {
+  const {id} = req.params
+  try {
+    const game = await GameModel.findById(id);
+    return res.status(200).json(game);
+  } catch (error) {
+    console.error('Error fetching games:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 
 /**
