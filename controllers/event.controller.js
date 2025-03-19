@@ -106,6 +106,9 @@ export const GetEvent = async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
+
+
 export const GetEventSingle = async (req, res) => {
     try {
         let { id } = req.params;

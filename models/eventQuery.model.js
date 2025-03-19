@@ -23,7 +23,12 @@ const EventQuerySchema = new mongoose.Schema({
         index : true
     }
      
-});
+},
+{
+    timestamps: true
+}
+
+);
 
 const EventQueryModel = mongoose.model('EventQuery', EventQuerySchema);
 
