@@ -1,28 +1,44 @@
 import mongoose from 'mongoose';
 
 const EventSchema = new mongoose.Schema({
-    event: {
+    title: {
         type: String,
         required: true,
-        trim: true,
+        trim: true
     }, 
-    eventDate: {
+    date: {
         type: Date,
-        required: true,
+        required: true
     }, 
-    eventDetails : {
+    location : {
         type : String, 
-    },
-    images : {
-        type : Array,
         required : true
     },
-    totalApply : {
+    timeStart : {
+        type : String, 
+        required : true
+    },
+    timeEnd : {
+        type : String, 
+        required : true
+    },
+    description : {
+        type : String, 
+        required : true
+    },
+    image : {
+        type : String,
+        required : true
+    },
+    count : {
         type : Number,
         default : 0
-    }
-     
-});
+    }  
+},
+{
+    timestamps: true,
+}
+);
 
 const EventModel = mongoose.model('Event', EventSchema);
 

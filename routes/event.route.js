@@ -8,8 +8,8 @@ const upload = multer()
 
 const route = express.Router()
 
-route.post("/create", upload.array("files", 10), CreateEvent);
-route.put("/update/:id", upload.array("files", 10), UpdateEvent);
+route.post("/create", upload.single('image'), CreateEvent);
+route.put("/update/:id", upload.single('image'), UpdateEvent);
 route.get("/single/:id", GetEventSingle);
 route.get("/with-form-applied/:id", singleEventWithFormApplied);
 route.delete("/:id", DeleteEvent);

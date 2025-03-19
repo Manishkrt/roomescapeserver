@@ -1,17 +1,40 @@
 import EventQueryModel from "../models/eventQuery.model.js";
+import EventModel from "../models/event.model.js";
+import mongoose from "mongoose";
 
-export const CreateQuery = async (req, res) => {
-    try { 
-        const isExist = EventQueryModel.findOne({email : req.body.email, event : req.body.event })
-        if(isExist){
-          res.status(400).json({ message: 'This email is already exist for this Event' });
-        }
-        const newAdmin = new EventQueryModel({ ...req.body });
-        await newAdmin.save(); 
-        res.status(201).json({ message: 'success' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-    }
+
+export const AddEventQuery = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+      const { name, email, phone, event } = req.body;
+
+      // Create Event Query
+      const newEventQuery = new EventQueryModel({ name, email, phone, event });
+      await newEventQuery.save({ session });
+
+      // Increment Event count
+      const updatedEvent = await EventModel.findByIdAndUpdate(
+          event,
+          { $inc: { count: 1 } },
+          { new: true, session }
+      );
+
+      if (!updatedEvent) {
+          throw new Error("Event not found");
+      }
+
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({ message: "Query submitted successfully", newEventQuery, updatedEvent });
+  } catch (error) { 
+      await session.abortTransaction();
+      session.endSession();
+
+      res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 

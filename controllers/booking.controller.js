@@ -148,6 +148,16 @@ export const checkTotalPrice = async (req, res) => {
   }
 };
 
+export const createBookingByClient = async (req, res) => { 
+  try {
+    const newBooking = new BookingModel({ ...req.body })
+    await newBooking.save()
+    res.status(201).json({ message: "bookig created", booking: newBooking });
+  } catch (error) {
+    console.error("Error in createBookingByAdmin:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
 export const createBookingByAdmin = async (req, res) => {
   console.log("booking Data", req.body);
   try {
@@ -159,85 +169,7 @@ export const createBookingByAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 }
-
-
-export const getBookingBySingleDate2 = async (req, res) => {
-  try {
-    const { date } = req.body;
-    if (!date) {
-      return res.status(400).json({ message: "Booking date is required" });
-    }
-
-    const bookingDate = new Date(date);
-    bookingDate.setHours(0, 0, 0, 0);
-
-    // Fetch all games
-    const games = await GameModel.find({}, { _id: 1, name: 1, description: 1, minParticipent: 1, maxParticipent: 1, thumbnail: 1 });
-
-    // Fetch all time slots
-    const timeSlots = await TimeSlotModel.find({}, { _id: 1, startTime: 1 });
-
-    // Fetch bookings for the given date
-    const bookings = await BookingModel.aggregate([
-      {
-        $match: { bookingDate: bookingDate }
-      },
-      {
-        $group: {
-          _id: {
-            game: "$game",
-            timeSlot: "$timeSlot"
-          },
-          bookings: {
-            $push: {
-              numberOfPeople: "$numberOfPeople",
-              totalPrice: "$totalPrice",
-              finalPrice: "$finalPrice",
-              discountPrice: "$discountPrice",
-              paymentType: "$paymentType",
-              transactionId: "$transactionId",
-              bookingBy: "$bookingBy",
-              name: "$name",
-              email: "$email",
-              phone: "$phone",
-              couponCode: "$couponCode",
-              createdAt: "$createdAt",
-              updatedAt: "$updatedAt"
-            }
-          }
-        }
-      }
-    ]);
-
-    // Convert bookings to a lookup map
-    const bookingMap = new Map();
-    bookings.forEach(booking => {
-      const key = `${booking._id.game}-${booking._id.timeSlot}`;
-      bookingMap.set(key, booking.bookings);
-    });
-
-    // Construct the final structured response
-    const result = games.map(game => ({
-      _id: game._id,
-      name: game.name,
-      description: game.description,
-      minParticipent: game.minParticipent,
-      maxParticipent: game.maxParticipent,
-      thumbnail: game.thumbnail,
-      timeSlots: timeSlots.map(slot => ({
-        _id: slot._id,
-        startTime: slot.startTime,
-        bookings: bookingMap.get(`${game._id}-${slot.startTime}`) || [] // Get bookings or empty array
-      }))
-    }));
-
-    res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    console.error("Error fetching bookings:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
-
+ 
 export const getBookingBySingleDate = async (req, res) => {
   try {
     const { date } = req.body;
@@ -321,91 +253,9 @@ export const getBookingBySingleDate = async (req, res) => {
     console.error("Error fetching bookings:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-};
-export const getBookingBySingleDate___BeforeNewTry = async (req, res) => {
-  try {
-    const { date } = req.body;
-    if (!date) {
-      return res.status(400).json({ message: "Booking date is required" });
-    }
-
-    const bookingDate = new Date(date);
-    bookingDate.setUTCHours(0, 0, 0, 0); // Set UTC midnight
-
-    const nextDay = new Date(bookingDate);
-    nextDay.setUTCDate(bookingDate.getUTCDate() + 1);
-    // Fetch all games
-    const games = await GameModel.find({}, { _id: 1, name: 1, description: 1, minParticipent: 1, maxParticipent: 1, thumbnail: 1 });
-
-    // Fetch all time slots
-    const timeSlots = await TimeSlotModel.find({}, { _id: 1, startTime: 1 });
+}; 
 
 
-    const bookings = await BookingModel.aggregate([
-      {
-
-        $match: {
-          bookingDate: {
-            $gte: bookingDate,
-            $lt: nextDay
-          }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            game: "$game",
-            timeSlot: "$timeSlot"
-          },
-          bookings: {
-            $push: {
-              numberOfPeople: "$numberOfPeople",
-              totalPrice: "$totalPrice",
-              finalPrice: "$finalPrice",
-              discountPrice: "$discountPrice",
-              paymentType: "$paymentType",
-              transactionId: "$transactionId",
-              bookingBy: "$bookingBy",
-              name: "$name",
-              email: "$email",
-              phone: "$phone",
-              couponCode: "$couponCode",
-              createdAt: "$createdAt",
-              updatedAt: "$updatedAt"
-            }
-          }
-        }
-      }
-    ]);
-
-    // Convert bookings to a lookup map
-    const bookingMap = new Map();
-    bookings.forEach(booking => {
-      const key = `${booking._id.game.toString()}-${booking._id.timeSlot.toString()}`;
-      bookingMap.set(key, booking.bookings);
-    });
-
-    const result = games.map(game => ({
-      _id: game._id,
-      name: game.name,
-      description: game.description,
-      minParticipent: game.minParticipent,
-      maxParticipent: game.maxParticipent,
-      thumbnail: game.thumbnail,
-      timeSlots: timeSlots.map(slot => ({
-        _id: slot._id,
-        startTime: slot.startTime,
-        bookings: bookingMap.get(`${game._id.toString()}-${slot.startTime.toString()}`) || []
-      }))
-    }));
-
-    res.status(200).json(result);
-    // res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    console.error("Error fetching bookings:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
 
 
 

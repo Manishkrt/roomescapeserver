@@ -33,6 +33,29 @@ const uploadImagesToCloudinary = async (files) => {
         throw new Error("Error uploading images");
     }
 };
+const uploadImageToCloudinary = async (file) => {
+    try {
+      if (!file || !file.buffer) {
+        throw new Error('File buffer is missing');
+      }
+      return new Promise((resolve, reject) => {
+        const upload = cloudinary.uploader.upload_stream(
+          { folder: 'event' },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result.secure_url);
+            }
+          }
+        );
+        upload.end(file.buffer);
+      });
+    } catch (error) {
+      console.error('Error uploading image to Cloudinary:', error);
+      throw new Error('Error uploading image');
+    }
+  };
 const deleteImageFromCloudinary = async (imageUrl) => {
     try {
         // Extract the public ID from the Cloudinary URL
@@ -49,17 +72,19 @@ const deleteImageFromCloudinary = async (imageUrl) => {
 
 export const CreateEvent = async (req, res) => {
     try {
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: "No files uploaded" });
-        }
-        const imageUrls = await uploadImagesToCloudinary(req.files);
-        const newEvent = new EventModel({ ...req.body, images: imageUrls });
-        await newEvent.save();
-        res.status(201).json({ message: "Success" });
+        if (!req.file) {
+            return res.status(400).json({ message: 'Image file is required' });
+          } 
+          const imageUrl = await uploadImageToCloudinary(req.file); 
+          const newEvent = new EventModel({...req.body, image:imageUrl }); 
+          await newEvent.save(); 
+          return res.status(201).json({ message: 'Event Added successfully' });
     } catch (error) {
         res.status(500).json({ message: "Server error", error });
     }
 };
+
+
 export const GetEvent = async (req, res) => {
     try {
         let { page = 1, limit = 10 } = req.query;
@@ -93,7 +118,34 @@ export const GetEventSingle = async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
 export const UpdateEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await EventModel.findById(id);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        let imageUrl = event.image; // Keep the existing image if not updated
+
+        if (req.file) {
+            imageUrl = await uploadImageToCloudinary(req.file);
+        }
+
+        const updatedEvent = await EventModel.findByIdAndUpdate(
+            id,
+            { ...req.body, image: imageUrl },
+            { new: true }
+        );
+
+        return res.status(200).json({ message: "Event updated successfully", event: updatedEvent });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+
+export const UpdateEvent2 = async (req, res) => {
     try {
         const { id } = req.params;
         const { existingImages } = req.body;

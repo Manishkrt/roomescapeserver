@@ -52,13 +52,14 @@ const deleteImageFromCloudinary = async (imageUrl) => {
  */
 export const createGame = async (req, res) => {
   try {
-    const { name, description, maxParticipent, minParticipent } = req.body;
+    const review = JSON.parse(req.body.review);
+    const { name, description, maxParticipent, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine } = req.body;
 
     if (!name || !maxParticipent) {
       return res.status(400).json({ error: 'Name and maxParticipent are required' });
     }
     const imageUrl = await uploadImageToCloudinary(req.file);
-    const newGame = new GameModel({ name, description, maxParticipent, thumbnail: imageUrl, minParticipent });
+    const newGame = new GameModel({ name, description, maxParticipent, thumbnail: imageUrl, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, review, headLine });
     await newGame.save();
 
     res.status(201).json({
@@ -83,31 +84,57 @@ export const getAllGames = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+export const getAllClientsGames = async (req, res) => {
+  try {
+    const games = await GameModel.find({status : true});
+    return res.status(200).json(games);
+  } catch (error) {
+    console.error('Error fetching games:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 
 /**
  * Update a game by its ID.
  * Expected request body may include any of: { name, description, maxParticipent }
  */
 export const updateGame = async (req, res) => {
-  const { id } = req.params;
-  const {name, description, minParticipent, maxParticipent, oldThumbnail  } = req.body;
+  const { id } = req.params; 
+  const {name, description, minParticipent, maxParticipent, oldThumbnail, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine, oldBgImage } = req.body;
+  const review = JSON.parse(req.body.review);
+ 
+  const {bgImage, thumbnail} = req.files 
+  
   try {
 
     const gameData = await GameModel.findById(id)
     if (!gameData) {
       return res.status(404).json({ error: 'Game not found' });
-    }
+    } 
+
     gameData.name = name;
     gameData.description = description;
     gameData.minParticipent = minParticipent;
     gameData.maxParticipent = maxParticipent;
+    gameData.gameTime = gameTime;
+    gameData.genre = genre;
+    gameData.minAge = minAge;
+    gameData.difficulty = difficulty;
+    gameData.frustration = frustration;
+    gameData.screwUp = screwUp;
+    gameData.review = review;
+    gameData.headLine = headLine;
 
-    if(req.file){  
-      const imageUrl = await uploadImageToCloudinary(req.file);
+    if(thumbnail){
+      const imageUrl = await uploadImageToCloudinary(thumbnail[0]);
       gameData.thumbnail = imageUrl
       await deleteImageFromCloudinary(oldThumbnail)
-    }else{ 
-      gameData.thumbnail = oldThumbnail
+    }
+    if(bgImage){
+      const imageUrl = await uploadImageToCloudinary(bgImage[0]);
+      gameData.bgImage = imageUrl
+      await deleteImageFromCloudinary(oldBgImage)
     } 
     await gameData.save() 
     res.status(200).json({
