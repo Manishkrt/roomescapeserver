@@ -52,11 +52,11 @@ export const loginAdmin = async (req, res) => {
 
             return res.status(200).json({ message: 'OTP sent', requires2FA: true, otp });
         }
-
+      
         // Generate JWT token
         const token = jwt.sign({ id: admin._id, role: admin.role }, JWT_SECRET, { expiresIn: TokenExpiresIn });
 
-        res.cookie('accessToken', token, { httpOnly: true, secure: false, maxAge: CookieTokenAge });
+        res.cookie('accessToken', token, { httpOnly: true, secure: true, sameSite: "none", maxAge: CookieTokenAge });
         // res.cookie('accessToken', token, { httpOnly: true, secure: true, sameSite: 'Strict', maxAge: CookieTokenAge });
 
         res.status(200).json({ message: 'Login successful', token });
@@ -89,7 +89,7 @@ export const verify2FA = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
+}; 
 
 // ✅ Enable 2FA
 export const enable2FA = async (req, res) => {
