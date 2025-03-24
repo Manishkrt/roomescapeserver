@@ -22,37 +22,23 @@ const formatDate = (dateString) => {
 export const checkTimeSlot = async (req, res) => {
   try {
     const { game, bookingDate } = req.body;
-
     if (!game) {
-      return res.status(400).json({ message: "Game ID is required" });
+      return res.status(404).json({ message: "Game ID is required" });
     }
     if (!bookingDate) {
-      return res.status(400).json({ message: "Booking Date is required" });
+      return res.status(404).json({ message: "Booking Date is required" });
     }
-
-    // const bookingBlockDate = await BlockGameModel.findOne({date : bookingDate,  $in :{game : gameId}})
-    // console.log("bookingBlockDate", bookingBlockDate);
-
     const bookingBlockDate = await BlockGameModel.findOne({ date: bookingDate, game: { $in: [game] } });
-    // console.log("bookingBlockDate", bookingBlockDate);
-
 
     if (bookingBlockDate) {
-      // console.log("inside if condition"); 
-      return res.status(400).json({reason:bookingBlockDate.reason , message : `this game in not available for date ${formatDate(bookingBlockDate.date)}. Please Choose another date. ` })
+      return res.status(400).json({ reason: bookingBlockDate.reason, message: `this game in not available for date ${formatDate(bookingBlockDate.date)}. Please Choose another date. ` })
     }
 
-
-    // Find the game and get maxParticipent per slot
     const gameData = await GameModel.findById(game);
-
-
 
     if (!gameData) {
       return res.status(404).json({ message: "Game not found" });
     }
-    // const maxParticipent = gameData.maxParticipent; 
-
     // Get all time slots
     const timeSlots = await TimeSlotModel.find();
 
@@ -60,50 +46,41 @@ export const checkTimeSlot = async (req, res) => {
     const bookedSlots = await BookingModel.aggregate([
       {
         $match: {
-          game: new mongoose.Types.ObjectId(game),  
-          bookingDate: new Date(bookingDate),  
+          game: new mongoose.Types.ObjectId(game),
+          bookingDate: new Date(bookingDate),
         },
       },
       {
         $group: {
-          _id: "$timeSlot",  
-          totalParticipants: { $sum: "$numberOfPeople" },  
-          // totalParticipants: { $sum: "$participants" },  
+          _id: "$timeSlot",
+          totalParticipants: { $sum: "$numberOfPeople" },
         },
       },
+
     ]);
     const bookedSlots2 = await BookingModel.aggregate([
       {
         $match: {
-          game: game,  
-          bookingDate: bookingDate,  
+          game: game,
+          bookingDate: bookingDate,
         },
       },
       {
         $group: {
-          _id: "$timeSlot",  
-          totalParticipants: { $sum: "$participants" },  
+          _id: "$timeSlot",
+          totalParticipants: { $sum: "$participants" },
         },
       },
     ]);
-    console.log("game, bookingDate", game, bookingDate);
-    
-
-    console.log("bookedSlots", bookedSlots);
-    
-
-    // Convert bookedSlots to a map for quick lookup
     const bookedMap = {};
     bookedSlots.forEach((slot) => {
       bookedMap[slot._id] = slot.totalParticipants;
     });
 
-    // Prepare response with available slots
     const availableSlots = timeSlots.map((slot) => {
-      const bookedCount = bookedMap[slot._id] || 0; // Get booked count or default to 0
+      const bookedCount = bookedMap[slot.startTime] || 0;
       const remainingSlots = bookedCount > 0 ? "Full" : "Available";
-      // const remainingSlots = maxParticipent - bookedCount;
-
+      // const remainingSlots = maxParticipent - bookedCount; 
       return {
         id: slot._id,
         timeSlot: slot.startTime,
