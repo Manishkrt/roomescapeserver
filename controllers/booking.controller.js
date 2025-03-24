@@ -4,6 +4,8 @@
 // import PublicHoliday from '../models/PublicHoliday.js';
 // import Pricing from '../models/Pricing.js';
 
+import mongoose from 'mongoose';
+import BlockGameModel from '../models/blockGame.model.js';
 import BookingModel from '../models/booking.model.js';
 import CouponCodeModel from '../models/couponCode.model.js';
 import GameModel from '../models/game.model.js'
@@ -11,6 +13,11 @@ import PricingModel from '../models/pricing.model.js';
 import PublicHolidayModel from '../models/publicHolidays.model.js';
 import TimeSlotModel from '../models/timeSlot.model.js';
 
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+};
 
 export const checkTimeSlot = async (req, res) => {
   try {
@@ -23,12 +30,28 @@ export const checkTimeSlot = async (req, res) => {
       return res.status(400).json({ message: "Booking Date is required" });
     }
 
+    // const bookingBlockDate = await BlockGameModel.findOne({date : bookingDate,  $in :{game : gameId}})
+    // console.log("bookingBlockDate", bookingBlockDate);
+
+    const bookingBlockDate = await BlockGameModel.findOne({ date: bookingDate, game: { $in: [game] } });
+    // console.log("bookingBlockDate", bookingBlockDate);
+
+
+    if (bookingBlockDate) {
+      // console.log("inside if condition"); 
+      return res.status(400).json({reason:bookingBlockDate.reason , message : `this game in not available for date ${formatDate(bookingBlockDate.date)}. Please Choose another date. ` })
+    }
+
+
     // Find the game and get maxParticipent per slot
     const gameData = await GameModel.findById(game);
+
+
+
     if (!gameData) {
       return res.status(404).json({ message: "Game not found" });
     }
-    const maxParticipent = gameData.maxParticipent;
+    // const maxParticipent = gameData.maxParticipent; 
 
     // Get all time slots
     const timeSlots = await TimeSlotModel.find();
@@ -37,17 +60,37 @@ export const checkTimeSlot = async (req, res) => {
     const bookedSlots = await BookingModel.aggregate([
       {
         $match: {
-          game: game, // Match the selected game
-          bookingDate: bookingDate, // Match the selected date
+          game: new mongoose.Types.ObjectId(game),  
+          bookingDate: new Date(bookingDate),  
         },
       },
       {
         $group: {
-          _id: "$timeSlot", // Group by time slot
-          totalParticipants: { $sum: "$participants" }, // Sum participants per slot
+          _id: "$timeSlot",  
+          totalParticipants: { $sum: "$numberOfPeople" },  
+          // totalParticipants: { $sum: "$participants" },  
         },
       },
     ]);
+    const bookedSlots2 = await BookingModel.aggregate([
+      {
+        $match: {
+          game: game,  
+          bookingDate: bookingDate,  
+        },
+      },
+      {
+        $group: {
+          _id: "$timeSlot",  
+          totalParticipants: { $sum: "$participants" },  
+        },
+      },
+    ]);
+    console.log("game, bookingDate", game, bookingDate);
+    
+
+    console.log("bookedSlots", bookedSlots);
+    
 
     // Convert bookedSlots to a map for quick lookup
     const bookedMap = {};
@@ -62,9 +105,9 @@ export const checkTimeSlot = async (req, res) => {
       // const remainingSlots = maxParticipent - bookedCount;
 
       return {
-        id: slot._id,  
-        timeSlot: slot.startTime,  
-        remainingSlots: remainingSlots,  
+        id: slot._id,
+        timeSlot: slot.startTime,
+        remainingSlots: remainingSlots,
         // remainingSlots: remainingSlots > 0 ? remainingSlots : 0,  
       };
     });
@@ -123,7 +166,7 @@ export const checkTotalPrice = async (req, res) => {
       const coupon = await CouponCodeModel.findOne({ coupon: couponCode, status: true });
 
       if (coupon) {
-        discountAmount = coupon.discountType == "percentage"?  (coupon.percentageNumber / 100) * totalPrice : coupon.discount;
+        discountAmount = coupon.discountType == "percentage" ? (coupon.percentageNumber / 100) * totalPrice : coupon.discount;
         finalPrice = totalPrice - discountAmount;
         couponMessage = "Coupon code applied successfully";
       } else {
@@ -148,7 +191,7 @@ export const checkTotalPrice = async (req, res) => {
   }
 };
 
-export const createBookingByClient = async (req, res) => { 
+export const createBookingByClient = async (req, res) => {
   try {
     const newBooking = new BookingModel({ ...req.body })
     await newBooking.save()
@@ -169,7 +212,7 @@ export const createBookingByAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 }
- 
+
 export const getBookingBySingleDate = async (req, res) => {
   try {
     const { date } = req.body;
@@ -253,7 +296,7 @@ export const getBookingBySingleDate = async (req, res) => {
     console.error("Error fetching bookings:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-}; 
+};
 
 
 
@@ -310,6 +353,6 @@ export const getBookingBySingleDate = async (req, res) => {
 //   "__v": 0
 // }]
 
-// these time slot for every game 
+// these time slot for every game
 
 // i want all game with group, in every game all timeslots now in every time slot bookings array if any match with game and time slot that data inside bookings array otherwise blank array. my structure should be like this. now again create getBookingBySingleDate controller with these criteria

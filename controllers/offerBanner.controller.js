@@ -25,6 +25,20 @@ const uploadImageToCloudinary = async (file) => {
   }
 };
 
+const deleteImageFromCloudinary = async (imageUrl) => {
+  try {
+    // Extract the public ID from the Cloudinary URL
+    const imageId = imageUrl.split('/').slice(-2).join('/').split('.')[0];  // Extract image ID
+
+    // Delete the image from Cloudinary using the imageId
+    await cloudinary.uploader.destroy(imageId);
+    return
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+    throw new Error('Error deleting image');
+  }
+};
+
 
 export const addBanner = async(req, res)=>{
     try { 
@@ -50,3 +64,26 @@ export const getBanner = async(req, res)=>{
         return res.status(500).json({ message: 'Error getting Banner', error: error.message });
     }
 }
+
+export const deleteOfferBanner = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      // Find and delete the blog
+      const offerBanner = await OfferBannerModel.findByIdAndDelete(id);
+      if (!offerBanner) {
+        return res.status(404).json({ message: "Blog not found" });
+      }
+  
+      // Delete the image from Cloudinary if it exists
+      if (offerBanner.imageUrl) {
+        await deleteImageFromCloudinary(offerBanner.imageUrl);
+      }
+  
+      res.status(200).json({ message: "Offer Banner deleted successfully" });
+  
+    } catch (error) {
+      console.error("Error deleting Offer Banner:", error);
+      res.status(500).json({ message: error.message });
+    }
+  };
