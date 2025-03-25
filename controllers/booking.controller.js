@@ -37,7 +37,7 @@ export const createBookingByClient = async (req, res) => {
   
     const phonePeResponse = await PhonePeService.initiatePayment(finalPrice, phone);
 
-    // console.log("phonePeResponse", phonePeResponse);
+    console.log("phonePeResponse", phonePeResponse);
       if (!phonePeResponse.success) {
         return res.status(400).json({ error: "Payment failed. Please try again." });
       } 

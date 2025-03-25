@@ -6,9 +6,13 @@ dotenv.config();
 
 // const PHONEPE_BASE_URL = "https://api.phonepe.com/apis/hermes"; // Use correct PhonePe API
 const  BASE_URL = "https://api.phonepe.com/apis/hermes/pg/v1/pay"; // Use correct PhonePe API
+// const  BASE_URL = " https://api-preprod.phonepe.com/apis/pg-sandbox"; // Use correct PhonePe API
 const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
 const SALT_KEY = process.env.PHONEPE_SALT_KEY;
 const SALT_INDEX = 1; // Default salt index
+
+
+
 
 export const PhonePeService2 = {
   async initiatePayment(amount, phone, transactionId) {
@@ -51,9 +55,10 @@ export const PhonePeService2 = {
 };
  
 
- 
+  
 export const PhonePeService = {
   async initiatePayment(amount, phone) {
+    console.log("MERCHANT_ID", MERCHANT_ID, "SALT_KEY", SALT_KEY );
     try {
       const payload = {
         merchantId: MERCHANT_ID,
@@ -83,7 +88,7 @@ export const PhonePeService = {
       return response.data;
     } catch (error) {
       console.error("PhonePe Payment Error:", error.response?.data , error.message);
-      return { success: false, error: error.response?.data || error.message };
+      return { success: false, error: error.response?.data || error.message  , errormessage : error.message };
     }
   },
 };
