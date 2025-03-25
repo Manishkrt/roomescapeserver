@@ -1,9 +1,4 @@
-// import Booking from '../models/Booking.js';
-// import Game from '../models/Game.js';
-// import TimeSlot from '../models/TimeSlot.js';
-// import PublicHoliday from '../models/PublicHoliday.js';
-// import Pricing from '../models/Pricing.js';
-
+ 
 import mongoose from 'mongoose';
 import BlockGameModel from '../models/blockGame.model.js';
 import BookingModel from '../models/booking.model.js';
@@ -18,11 +13,125 @@ import axios from "axios";
 import { PhonePeService } from '../config/phonePeService.js';
 import { v4 as uuidv4 } from "uuid";
 
+ 
+import crypto from "crypto";
+import dotenv from "dotenv";
+ 
+
+dotenv.config();
+
+const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
+const SALT_KEY = process.env.PHONEPE_SALT_KEY;
+const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
+const SERVERURL = process.env.BACKEND_URL;
+
 // import { v4 as uuidv4 } from "uuid";
 // import BookingModel from "../models/BookingModel.js";
 // import { PhonePeService } from "../services/PhonePeService.js";
 
 export const createBookingByClient = async (req, res) => {
+  try {
+      console.log("Hit booking API");
+
+      const {
+          game, bookingDate, timeSlot, timeSlotId, numberOfPeople, totalPrice, finalPrice, 
+          discountPrice, advancePay, paymentType, name, email, phone, couponCode, bookingBy
+      } = req.body;
+
+      // Ensure time slot is not double booked
+      const existingBooking = await BookingModel.findOne({ game, bookingDate, timeSlotId });
+      if (existingBooking) {
+          return res.status(400).json({ error: "This time slot is already booked. Please choose another." });
+      }
+
+      // Create a new booking
+      const bookingData = new BookingModel({
+          game,
+          bookingDate,
+          timeSlot,
+          timeSlotId,
+          numberOfPeople,
+          totalPrice,
+          finalPrice,
+          discountPrice,
+          advancePay,
+          paymentType,
+          name,
+          email,
+          phone,
+          couponCode,
+          bookingBy
+      });
+
+      await bookingData.save();
+
+      if (paymentType === "cod") {
+          return res.status(201).json({ message: "Booking confirmed!", booking: bookingData });
+      }
+
+      // **PhonePe Payment Processing**
+      const amount = finalPrice * 100; // Convert to paise
+      const merchantTransactionId = `MT${bookingData._id}`;
+      const merchantUserId = `MUID${bookingData._id}`; // Unique user ID
+
+      const paymentData = {
+          merchantId: MERCHANT_ID,
+          merchantTransactionId,
+          merchantUserId,
+          name,
+          amount,
+          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback/${merchantTransactionId}/${bookingData._id}`,
+          redirectMode: "POST",
+          paymentInstrument: { type: "PAY_PAGE" }
+      };
+
+      const payload = JSON.stringify(paymentData);
+      const base64Payload = Buffer.from(payload).toString("base64");
+
+      const keyIndex = 1;
+      const checksumString = base64Payload + "/pg/v1/pay" + SALT_KEY;
+      const sha256 = crypto.createHash("sha256").update(checksumString).digest("hex");
+      const checksum = sha256 + "###" + keyIndex;
+
+      const prod_URL = `${PaymentUrl}/pg/v1/pay`;
+
+      const options = {
+          method: "POST",
+          url: prod_URL,
+          headers: {
+              accept: "application/json",
+              "Content-Type": "application/json",
+              "X-VERIFY": checksum
+          },
+          data: { request: base64Payload }
+      };
+
+      // Send request to PhonePe
+      axios.request(options)
+          .then(async (response) => {
+              // Update booking with transactionId
+              await BookingModel.findByIdAndUpdate(bookingData._id, { transactionId: merchantTransactionId });
+
+              return res.json({
+                  message: "Payment initiated",
+                  paymentUrl: response.data.data.redirectUrl,
+                  transactionId: merchantTransactionId
+              });
+          })
+          .catch((error) => {
+              console.error("PhonePe Error:", error);
+              res.status(400).json({ error: "Payment failed. Please try again." });
+          });
+  }
+  catch (err) {
+      console.log(err);
+      res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+export const createBookingByClient1 = async (req, res) => {
   console.log("Hit booking API");
 
   try {
@@ -42,7 +151,7 @@ export const createBookingByClient = async (req, res) => {
     let phonePeResponse = null;
     
     if (paymentType === "online") {
-      phonePeResponse = await PhonePeService.initiatePayment(finalPrice, phone, userId);
+      phonePeResponse = await PhonePeService.initiatePayment(finalPrice);
       
       if (!phonePeResponse.success) {
         return res.status(400).json({ error: "Payment failed. Please try again." });

@@ -11,14 +11,14 @@ const SALT_KEY = process.env.PHONEPE_SALT_KEY;
 const SALT_INDEX = 1; // Default salt index
 
 export const PhonePeService = {
-  async initiatePayment(amount, phone, userId) {
+  async initiatePayment(amount) {
     try {
       const merchantTransactionId = `MT_${uuidv4()}`; // Ensure uniqueness
 
       const payload = {
         merchantId: MERCHANT_ID,
         merchantTransactionId,
-        merchantUserId: `MUID_${userId}_${uuidv4()}`, // Ensure uniqueness
+        merchantUserId: `MUID_${uuidv4()}`, // Ensure uniqueness
         amount: amount * 100, // Convert to paise
         callbackUrl: `${process.env.BACKEND_URL}/api/v1/booking/phone-pay/callback`,
         paymentInstrument: {
