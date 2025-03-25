@@ -100,6 +100,8 @@ export const checkTimeSlot = async (req, res) => {
   }
 };
 
+
+
 export const checkTotalPrice = async (req, res) => {
   const { numberOfPeople, bookingDate, couponCode } = req.body;
 

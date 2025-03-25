@@ -19,6 +19,7 @@ import eventRouter from './routes/event.route.js'
 import eventQueryRouter from './routes/eventQuery.route.js' 
 import offerBannerRouter from './routes/offerBanner.route.js' 
 import blockGameRouter from './routes/blockGame.model.js' 
+import GameReviewRouter from './routes/gameReview.route.js' 
 
 dotenv.config() 
 const PORT = process.env.PORT || 8000 
@@ -53,6 +54,7 @@ app.use('/api/v1/event', eventRouter)
 app.use('/api/v1/event-booking', eventQueryRouter)  
 app.use('/api/v1/offer-banner', offerBannerRouter)  
 app.use('/api/v1/block-games', blockGameRouter)  
+app.use('/api/v1/game-review', GameReviewRouter)  
 app.get('/', (req, res)=>{ 
     res.send('Server is running');
 })

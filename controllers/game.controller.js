@@ -1,5 +1,6 @@
 import cloudinary from '../config/cloudinary.config.js';
 import GameModel from '../models/game.model.js';
+import GameReviewModel from '../models/gameReview.model.js';
 
 
 // Function to upload an image to Cloudinary
@@ -52,14 +53,28 @@ const deleteImageFromCloudinary = async (imageUrl) => {
  */
 export const createGame = async (req, res) => {
   try {
-    const review = JSON.parse(req.body.review);
-    const { name, description, maxParticipent, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine } = req.body;
+    console.log("hit");
+    
+    // const review = JSON.parse(req.body.review);
+    // const { name, description, maxParticipent, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine } = req.body;
+    let {bgImage, thumbnail} = req.files 
 
-    if (!name || !maxParticipent) {
-      return res.status(400).json({ error: 'Name and maxParticipent are required' });
+
+    if(thumbnail){
+      const imageUrl = await uploadImageToCloudinary(thumbnail[0]);
+      thumbnail = imageUrl 
     }
-    const imageUrl = await uploadImageToCloudinary(req.file);
-    const newGame = new GameModel({ name, description, maxParticipent, thumbnail: imageUrl, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, review, headLine });
+    if(bgImage){
+      const imageUrl = await uploadImageToCloudinary(bgImage[0]);
+      bgImage = imageUrl 
+    } 
+
+    
+    // if (!name || !maxParticipent) {
+    //   return res.status(400).json({ error: 'Name and maxParticipent are required' });
+    // } 
+    const newGame = new GameModel({ ...req.body, thumbnail, bgImage, });
+    // const newGame = new GameModel({ name, description, maxParticipent, thumbnail: thumbnail, bgImage, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine });
     await newGame.save();
 
     res.status(201).json({
@@ -67,7 +82,7 @@ export const createGame = async (req, res) => {
       game: newGame,
     });
   } catch (error) {
-    console.error('Error creating game:', error);
+    console.error('Error creating game:', error.message);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -84,15 +99,100 @@ export const getAllGames = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-export const getAllClientsGames = async (req, res) => {
+export const getAllClientsGames2 = async (req, res) => {
   try {
+
     const games = await GameModel.find({status : true});
+    
     return res.status(200).json(games);
   } catch (error) {
     console.error('Error fetching games:', error);
     res.status(500).json({ error: 'Server error' });
   }
+}; 
+export const getAllClientsGames_true = async (req, res) => {
+  try {
+    const games = await GameModel.aggregate([
+      { $match: { status: true } },
+      {
+        $lookup: {
+          from: "gamereviews", // Ensure this matches the actual collection name
+          localField: "_id",
+          foreignField: "game",
+          as: "reviews"
+        }
+      },
+      // {
+      //   $lookup: {
+      //     from: "bookings", // Ensure correct bookings collection name
+      //     localField: "_id",
+      //     foreignField: "game",
+      //     as: "bookings"
+      //   }
+      // },
+      {
+        $addFields: {
+          // totalCustomer: { $size: "$bookings" }, // Count customers from bookings 
+          totalCustomer: { $size: "$reviews" }, // Count customers from bookings  
+          review: { $arrayElemAt: ["$reviews", 0] } // Get the first review
+        }
+      },
+      { $project: { bookings: 0, reviews: 0 } } // Exclude full bookings/reviews array
+    ]);
+
+    return res.status(200).json(games);
+  } catch (error) {
+    console.error("Error fetching games:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };
+
+export const getAllClientsGames = async (req, res) => {
+  try {
+    const games = await GameModel.aggregate([
+      { $match: { status: true } },
+      {
+        $lookup: {
+          from: "gamereviews", // Ensure this matches your actual collection name
+          localField: "_id",
+          foreignField: "game",
+          as: "reviews"
+        }
+      },
+      {
+        $addFields: {
+          totalReview: { $size: "$reviews" } // Count total reviews
+        }
+      },
+      { $project: { bookings: 0 } } // Exclude bookings if not needed
+    ]);
+
+    return res.status(200).json(games);
+  } catch (error) {
+    console.error("Error fetching games:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const singleGame = async (req, res) => {
   const {id} = req.params
   try {
@@ -108,11 +208,11 @@ export const singleGame = async (req, res) => {
 /**
  * Update a game by its ID.
  * Expected request body may include any of: { name, description, maxParticipent }
- */
+ */ 
 export const updateGame = async (req, res) => {
   const { id } = req.params; 
   const {name, description, minParticipent, maxParticipent, oldThumbnail, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine, oldBgImage } = req.body;
-  const review = JSON.parse(req.body.review);
+  // const review = JSON.parse(req.body.review);
  
   const {bgImage, thumbnail} = req.files 
   
@@ -133,7 +233,7 @@ export const updateGame = async (req, res) => {
     gameData.difficulty = difficulty;
     gameData.frustration = frustration;
     gameData.screwUp = screwUp;
-    gameData.review = review;
+    // gameData.review = review;
     gameData.headLine = headLine;
 
     if(thumbnail){

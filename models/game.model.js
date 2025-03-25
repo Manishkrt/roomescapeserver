@@ -54,11 +54,15 @@ const gameSchema = new mongoose.Schema({
     type: Number, 
     required : true
   },
-
-  review: {
-    type: reviewSchema,  
-    required: true,
+  totalCustomer : {
+    type : Number,
+    default : 500
   },
+
+  // review: {
+  //   type: reviewSchema,  
+  //   required: true,
+  // },
 
   headLine : {
     type : String,

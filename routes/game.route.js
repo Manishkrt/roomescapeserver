@@ -8,7 +8,7 @@ const upload = multer()
 const router = express.Router();
 
 // router.post('/create',   createGame);
-router.post('/create', upload.single('thumbnail'), upload.single('thumbnail'), createGame);
+router.post('/create', upload.fields([{name :'thumbnail'},{name :'bgImage'}]), createGame);
 router.get('/all', getAllGames);
 router.get('/single/:id', singleGame);
 
