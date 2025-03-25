@@ -61,12 +61,7 @@ export const createBookingByClient = async (req, res) => {
           phone,
           couponCode,
           bookingBy
-      });
-
-      
-
-       
-
+      }); 
       // **PhonePe Payment Processing**
       const amount =  100; // Convert to paise
       const merchantTransactionId = `MT${bookingData._id}`;
@@ -110,12 +105,13 @@ export const createBookingByClient = async (req, res) => {
           .then(async (response) => {
               // Update booking with transactionId
               // await BookingModel.findByIdAndUpdate(bookingData._id, { transactionId: merchantTransactionId });
-              await bookingData.save();
-              return res.json({
-                  message: "Payment initiated",
-                  paymentUrl: response.data.data.redirectUrl,
-                  transactionId: merchantTransactionId
-              });
+              // await bookingData.save();
+              // return res.json({
+              //     message: "Payment initiated",
+              //     paymentUrl: response.data.data.redirectUrl,
+              //     transactionId: merchantTransactionId
+              // });
+              return res.json(response.data)
           })
           .catch((error) => {
               console.error("PhonePe Error:", error);
