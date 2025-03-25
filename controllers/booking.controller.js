@@ -18,13 +18,17 @@ import axios from "axios";
 import { PhonePeService } from '../config/phonePeService.js';
 import { v4 as uuidv4 } from "uuid";
 
+// import { v4 as uuidv4 } from "uuid";
+// import BookingModel from "../models/BookingModel.js";
+// import { PhonePeService } from "../services/PhonePeService.js";
+
 export const createBookingByClient = async (req, res) => {
-  console.log("hit booking Api");
-   
+  console.log("Hit booking API");
+
   try {
     const {
       game, bookingDate, timeSlot, numberOfPeople, totalPrice, finalPrice, 
-      discountPrice, advancePay, paymentType, name, email, phone, couponCode
+      discountPrice, advancePay, paymentType, name, email, phone, couponCode, userId
     } = req.body;
 
     // Check if game and time slot are already booked
@@ -33,19 +37,21 @@ export const createBookingByClient = async (req, res) => {
       return res.status(400).json({ error: "This time slot is already booked. Please choose another." });
     }
 
-    let transactionId = uuidv4(); // Generate unique transaction ID
-  
-    const phonePeResponse = await PhonePeService.initiatePayment(finalPrice, phone);
-
-    console.log("phonePeResponse", phonePeResponse);
+    // Initiate PhonePe payment if payment type is online
+    let transactionId = uuidv4();
+    let phonePeResponse = null;
+    
+    if (paymentType === "online") {
+      phonePeResponse = await PhonePeService.initiatePayment(finalPrice, phone, userId);
+      
       if (!phonePeResponse.success) {
         return res.status(400).json({ error: "Payment failed. Please try again." });
-      } 
-    
-       
+      }
       
+      transactionId = phonePeResponse.transactionId;
+    }
 
-    // Save booking
+    // Save booking in database
     const newBooking = new BookingModel({
       game,
       bookingDate,
@@ -69,7 +75,7 @@ export const createBookingByClient = async (req, res) => {
     res.status(201).json({ 
       message: "Booking confirmed!", 
       booking: newBooking, 
-      paymentUrl: phonePeResponse?.data?.redirectUrl 
+      paymentUrl: phonePeResponse?.data?.data?.redirectUrl || null 
     });
 
   } catch (error) {
@@ -77,6 +83,7 @@ export const createBookingByClient = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
  
 export const phonePePaymentCallback = async (req, res) => {
