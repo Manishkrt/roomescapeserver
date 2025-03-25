@@ -63,11 +63,9 @@ export const createBookingByClient = async (req, res) => {
           bookingBy
       });
 
-      await bookingData.save();
+      
 
-      if (paymentType === "cod") {
-          return res.status(201).json({ message: "Booking confirmed!", booking: bookingData });
-      }
+       
 
       // **PhonePe Payment Processing**
       const amount = finalPrice * 100; // Convert to paise
@@ -80,7 +78,8 @@ export const createBookingByClient = async (req, res) => {
           merchantUserId,
           name,
           amount,
-          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback/${merchantTransactionId}/${bookingData._id}`,
+          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`,
+          // redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback/${merchantTransactionId}/${bookingData._id}`,
           redirectMode: "POST",
           paymentInstrument: { type: "PAY_PAGE" }
       };
@@ -111,7 +110,7 @@ export const createBookingByClient = async (req, res) => {
           .then(async (response) => {
               // Update booking with transactionId
               await BookingModel.findByIdAndUpdate(bookingData._id, { transactionId: merchantTransactionId });
-
+              await bookingData.save();
               return res.json({
                   message: "Payment initiated",
                   paymentUrl: response.data.data.redirectUrl,
