@@ -7,7 +7,7 @@ import AdminModel from '../models/admin.model.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
 const CookieTokenAge = process.env.Token_Age || 60*60*1000
-const TokenExpiresIn = '1h'
+const TokenExpiresIn = '15h'
 
 // ✅ Register Admin
 export const registerAdmin = async (req, res) => {

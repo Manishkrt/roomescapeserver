@@ -14,6 +14,29 @@ import PublicHolidayModel from '../models/publicHolidays.model.js';
 import TimeSlotModel from '../models/timeSlot.model.js';
 
 
+import axios from "axios";
+
+const PhonePeService = {
+  async initiatePayment(amount, phone) {
+    try {
+      const response = await axios.post("https://api.phonepe.com/v3/payment", {
+        amount,
+        phone,
+        callbackUrl: "https://yourbackend.com/payment-status",
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("PhonePe payment error:", error);
+      return { success: false };
+    }
+  },
+};
+
+
+
+
+
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -170,6 +193,8 @@ export const checkTotalPrice = async (req, res) => {
   }
 };
 
+
+
 export const createBookingByClient = async (req, res) => {
   try {
     const newBooking = new BookingModel({ ...req.body })
@@ -180,6 +205,12 @@ export const createBookingByClient = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 }
+
+
+
+
+
+
 export const createBookingByAdmin = async (req, res) => {
   console.log("booking Data", req.body);
   try {

@@ -29,11 +29,8 @@ const uploadImageToCloudinary = async (file) => {
 };
 
 const deleteImageFromCloudinary = async (imageUrl) => {
-  try {
-    // Extract the public ID from the Cloudinary URL
-    const imageId = imageUrl.split('/').slice(-2).join('/').split('.')[0];  // Extract image ID
-
-    // Delete the image from Cloudinary using the imageId
+  try { 
+    const imageId = imageUrl.split('/').slice(-2).join('/').split('.')[0];    
     await cloudinary.uploader.destroy(imageId);
     return
   } catch (error) {
@@ -42,24 +39,10 @@ const deleteImageFromCloudinary = async (imageUrl) => {
   }
 };
 
-/**
- * Create a new game.
- * Expected request body: 
- * {
- *   "name": "Game Name",
- *   "description": "Game Description",
- *   "maxParticipent": 10
- * }
- */
+ 
 export const createGame = async (req, res) => {
-  try {
-    console.log("hit");
-    
-    // const review = JSON.parse(req.body.review);
-    // const { name, description, maxParticipent, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine } = req.body;
-    let {bgImage, thumbnail} = req.files 
-
-
+  try { 
+    let {bgImage, thumbnail} = req.files  
     if(thumbnail){
       const imageUrl = await uploadImageToCloudinary(thumbnail[0]);
       thumbnail = imageUrl 
@@ -67,14 +50,8 @@ export const createGame = async (req, res) => {
     if(bgImage){
       const imageUrl = await uploadImageToCloudinary(bgImage[0]);
       bgImage = imageUrl 
-    } 
-
-    
-    // if (!name || !maxParticipent) {
-    //   return res.status(400).json({ error: 'Name and maxParticipent are required' });
-    // } 
-    const newGame = new GameModel({ ...req.body, thumbnail, bgImage, });
-    // const newGame = new GameModel({ name, description, maxParticipent, thumbnail: thumbnail, bgImage, minParticipent, gameTime, genre , minAge, difficulty , frustration, screwUp, headLine });
+    }  
+    const newGame = new GameModel({ ...req.body, thumbnail, bgImage, }); 
     await newGame.save();
 
     res.status(201).json({
@@ -99,53 +76,7 @@ export const getAllGames = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-export const getAllClientsGames2 = async (req, res) => {
-  try {
-
-    const games = await GameModel.find({status : true});
-    
-    return res.status(200).json(games);
-  } catch (error) {
-    console.error('Error fetching games:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-}; 
-export const getAllClientsGames_true = async (req, res) => {
-  try {
-    const games = await GameModel.aggregate([
-      { $match: { status: true } },
-      {
-        $lookup: {
-          from: "gamereviews", // Ensure this matches the actual collection name
-          localField: "_id",
-          foreignField: "game",
-          as: "reviews"
-        }
-      },
-      // {
-      //   $lookup: {
-      //     from: "bookings", // Ensure correct bookings collection name
-      //     localField: "_id",
-      //     foreignField: "game",
-      //     as: "bookings"
-      //   }
-      // },
-      {
-        $addFields: {
-          // totalCustomer: { $size: "$bookings" }, // Count customers from bookings 
-          totalCustomer: { $size: "$reviews" }, // Count customers from bookings  
-          review: { $arrayElemAt: ["$reviews", 0] } // Get the first review
-        }
-      },
-      { $project: { bookings: 0, reviews: 0 } } // Exclude full bookings/reviews array
-    ]);
-
-    return res.status(200).json(games);
-  } catch (error) {
-    console.error("Error fetching games:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+ 
 
 export const getAllClientsGames = async (req, res) => {
   try {
@@ -172,26 +103,7 @@ export const getAllClientsGames = async (req, res) => {
     console.error("Error fetching games:", error);
     res.status(500).json({ error: "Server error" });
   }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+};  
 
 export const singleGame = async (req, res) => {
   const {id} = req.params

@@ -36,7 +36,7 @@ const bookingSchema = new mongoose.Schema({
         default : 0,
         required: true,
     },
-    advancePrice: {
+    advancePay: {
         type: Number, 
     },
     paymentType: {
