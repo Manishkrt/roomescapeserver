@@ -15,22 +15,111 @@ import TimeSlotModel from '../models/timeSlot.model.js';
 
 
 import axios from "axios";
+import { PhonePeService } from '../config/phonePeService.js';
+import { v4 as uuidv4 } from "uuid";
 
-const PhonePeService = {
-  async initiatePayment(amount, phone) {
-    try {
-      const response = await axios.post("https://api.phonepe.com/v3/payment", {
-        amount,
-        phone,
-        callbackUrl: "https://yourbackend.com/payment-status",
-      });
+export const createBookingByClient = async (req, res) => {
+  console.log("hit booking Api");
+   
+  try {
+    const {
+      game, bookingDate, timeSlot, numberOfPeople, totalPrice, finalPrice, 
+      discountPrice, advancePay, paymentType, name, email, phone, couponCode
+    } = req.body;
 
-      return response.data;
-    } catch (error) {
-      console.error("PhonePe payment error:", error);
-      return { success: false };
+    // Check if game and time slot are already booked
+    const existingBooking = await BookingModel.findOne({ game, bookingDate, timeSlot });
+    if (existingBooking) {
+      return res.status(400).json({ error: "This time slot is already booked. Please choose another." });
     }
-  },
+
+    let transactionId = uuidv4(); // Generate unique transaction ID
+  
+    const phonePeResponse = await PhonePeService.initiatePayment(finalPrice, phone);
+
+    // console.log("phonePeResponse", phonePeResponse);
+      if (!phonePeResponse.success) {
+        return res.status(400).json({ error: "Payment failed. Please try again." });
+      } 
+    
+       
+      
+
+    // Save booking
+    const newBooking = new BookingModel({
+      game,
+      bookingDate,
+      timeSlot,
+      numberOfPeople,
+      totalPrice,
+      finalPrice,
+      discountPrice,
+      advancePay,
+      paymentType,
+      transactionId: paymentType === "online" ? transactionId : null,
+      bookingBy: "client",
+      name,
+      email,
+      phone,
+      couponCode
+    });
+
+    await newBooking.save();
+
+    res.status(201).json({ 
+      message: "Booking confirmed!", 
+      booking: newBooking, 
+      paymentUrl: phonePeResponse?.data?.redirectUrl 
+    });
+
+  } catch (error) {
+    console.error("Error creating booking:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+ 
+export const phonePePaymentCallback = async (req, res) => {
+  try {
+    const { transactionId, status } = req.body; // Data received from PhonePe
+
+    if (!transactionId || !status) {
+      return res.status(400).json({ error: "Invalid request data" });
+    }
+
+    // Find the booking associated with this transaction
+    const booking = await BookingModel.findOne({ transactionId });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Update booking status based on payment status
+    if (status === "SUCCESS") {
+      booking.paymentType = "online";
+    } else {
+      booking.paymentType = "failed";
+    }
+
+    await booking.save();
+
+    return res.status(200).json({ message: "Payment status updated", booking });
+  } catch (error) {
+    console.error("Payment Callback Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
+// Fetch bookings with populated game name
+export const getBookings = async (req, res) => {
+  try {
+    const bookings = await BookingModel.find().populate("game", "name").sort({ createdAt: -1 });
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };
 
 
@@ -195,16 +284,16 @@ export const checkTotalPrice = async (req, res) => {
 
 
 
-export const createBookingByClient = async (req, res) => {
-  try {
-    const newBooking = new BookingModel({ ...req.body })
-    await newBooking.save()
-    res.status(201).json({ message: "bookig created", booking: newBooking });
-  } catch (error) {
-    console.error("Error in createBookingByAdmin:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-}
+// export const createBookingByClient = async (req, res) => {
+//   try {
+//     const newBooking = new BookingModel({ ...req.body })
+//     await newBooking.save()
+//     res.status(201).json({ message: "bookig created", booking: newBooking });
+//   } catch (error) {
+//     console.error("Error in createBookingByAdmin:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// }
 
 
 
