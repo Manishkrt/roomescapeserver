@@ -68,7 +68,7 @@ export const createBookingByClient = async (req, res) => {
        
 
       // **PhonePe Payment Processing**
-      const amount = finalPrice * 100; // Convert to paise
+      const amount =  100; // Convert to paise
       const merchantTransactionId = `MT${bookingData._id}`;
       const merchantUserId = `MUID${bookingData._id}`; // Unique user ID
 
@@ -109,7 +109,7 @@ export const createBookingByClient = async (req, res) => {
       axios.request(options)
           .then(async (response) => {
               // Update booking with transactionId
-              await BookingModel.findByIdAndUpdate(bookingData._id, { transactionId: merchantTransactionId });
+              // await BookingModel.findByIdAndUpdate(bookingData._id, { transactionId: merchantTransactionId });
               await bookingData.save();
               return res.json({
                   message: "Payment initiated",
@@ -195,6 +195,9 @@ export const createBookingByClient1 = async (req, res) => {
 
  
 export const phonePePaymentCallback = async (req, res) => {
+  console.log(req.body);
+  
+  return res.status(200).json({message:"success"})
   try {
     const { transactionId, status } = req.body; // Data received from PhonePe
 
