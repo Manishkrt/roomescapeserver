@@ -58,8 +58,8 @@ export const createBookingByClient = async (req, res) => {
           merchantUserId,
           name,
           amount,  
-          redirectUrl: `${SERVERURL}/api/v1/phone-pay/redirect/${merchantTransactionId}`,
-          callbackUrl: `${SERVERURL}/api/v1/phone-pay/callback`,
+          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/redirect/${merchantTransactionId}`,
+          callbackUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`,
           redirectMode: "POST",
           paymentInstrument: { type: "PAY_PAGE" }
       };
