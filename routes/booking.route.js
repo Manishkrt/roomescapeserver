@@ -4,12 +4,12 @@ import { checkTimeSlot, checkTotalPrice, createBookingByAdmin, createBookingByCl
 const router = express.Router()
 
 router.post('/chek-slot-available' , checkTimeSlot)
-router.post('/chek-price' , checkTotalPrice)
+router.post('/chek-price' , checkTotalPrice) 
 router.post('/booking-by-admin' , createBookingByAdmin) 
 router.post('/get-by-date', getBookingBySingleDate)
 
 
 router.post('/booking-by-client' , createBookingByClient) 
-router.post('/phone-pay/callback' , phonePePaymentCallback) 
+router.post('/phone-pay/callback/:txnId' , phonePePaymentCallback) 
 
-export default router
+export default router   

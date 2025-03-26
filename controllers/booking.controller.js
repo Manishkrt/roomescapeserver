@@ -24,6 +24,7 @@ const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
 const SALT_KEY = process.env.PHONEPE_SALT_KEY;
 const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
 const SERVERURL = process.env.BACKEND_URL;
+const DomainUrl = process.env.DOMAIN_URL
 
 // import { v4 as uuidv4 } from "uuid";
 // import BookingModel from "../models/BookingModel.js";
@@ -73,8 +74,8 @@ export const createBookingByClient = async (req, res) => {
           merchantUserId,
           name,
           amount,
-          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`,
-          // redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback/${merchantTransactionId}/${bookingData._id}`,
+          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`, 
+          redirectUrl: `${SERVERURL}/api/order/paymentStatus/${merchantTransactionId}`,
           redirectMode: "POST",
           paymentInstrument: { type: "PAY_PAGE" }
       };
@@ -189,8 +190,46 @@ export const createBookingByClient1 = async (req, res) => {
 };
 
 
- 
 export const phonePePaymentCallback = async (req, res) => {
+  console.log("req.body", req.body);
+  
+  const merchantTransactionId = req.params.txnId
+  // const orderId = req.params.orderId
+  // const userId = req.params.userId
+  const merchantId = MERCHANT_ID
+  const string = `/pg/v1/status/${merchantId}/${merchantTransactionId}` + SALT_KEY;
+  const sha256 = crypto.createHash('sha256').update(string).digest('hex');
+  const checksum = sha256 + "###" + keyIndex;
+  const options = {
+      method: 'get',
+      url: `${PaymentUrl}/pg/v1/status/${merchantId}/${merchantTransactionId}`,
+      headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-VERIFY': `${checksum}`,
+          'X-MERCHANT-ID': `${merchantId}`
+      }
+  };
+  axios.request(options).then(async (response) => { 
+      if (response.data.success === true) { 
+          return res.redirect(`${DomainUrl}/booking`)
+          // return res.redirect(`${DomainUrl}/order-confirmed/${orderId}`)
+      } else {
+          
+          return res.redirect(`${DomainUrl}/coupon`)
+          // return res.redirect(`${DomainUrl}/payment-failed`)
+      }
+  })
+      .catch((error) => {
+          console.log(error);
+          return res.redirect(`${DomainUrl}`)
+      }); 
+}
+
+
+ 
+export const phonePePaymentCallback1 = async (req, res) => {
+
   console.log(req.body);
   
   return res.status(200).json({message:"success"})
