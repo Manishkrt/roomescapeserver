@@ -68,13 +68,18 @@ export const createBookingByClient = async (req, res) => {
       const merchantTransactionId = `MT${bookingData._id}`;
       const merchantUserId = `MUID${bookingData._id}`; // Unique user ID
 
+      console.log("merchantTransactionId", merchantTransactionId);
+      console.log("merchantUserId", merchantUserId);
+      
+      
+
       const paymentData = {
           merchantId: MERCHANT_ID,
           merchantTransactionId,
           merchantUserId,
           name,
           amount,
-          redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`, 
+          // redirectUrl: `${SERVERURL}/api/v1/booking/phone-pay/callback`, 
           redirectUrl: `${SERVERURL}/api/order/paymentStatus/${merchantTransactionId}`,
           redirectMode: "POST",
           paymentInstrument: { type: "PAY_PAGE" }
