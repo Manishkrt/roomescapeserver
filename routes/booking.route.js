@@ -1,5 +1,5 @@
 import express from 'express'
-import { checkTimeSlot, checkTotalPrice, createBookingByAdmin, createBookingByClient, getBookingBySingleDate, phonePePaymentCallback } from '../controllers/booking.controller.js'
+import { checkTimeSlot, checkTotalPrice, createBookingByAdmin, createBookingByClient, getBookingBySingleDate, phonePePaymentCallback, phonePePaymentredirect } from '../controllers/booking.controller.js'
 
 const router = express.Router()
 
@@ -10,6 +10,7 @@ router.post('/get-by-date', getBookingBySingleDate)
 
 
 router.post('/booking-by-client' , createBookingByClient) 
-router.post('/phone-pay/callback/:txnId' , phonePePaymentCallback) 
+router.post('/phone-pay/redirect/:txnId' , phonePePaymentredirect) 
+router.post('/phone-pay/callback' , phonePePaymentCallback) 
 
 export default router   
