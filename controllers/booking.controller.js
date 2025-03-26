@@ -22,9 +22,11 @@ dotenv.config();
 
 const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
 const SALT_KEY = process.env.PHONEPE_SALT_KEY;
-const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
+const PaymentUrl = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
+// const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
 const SERVERURL = process.env.BACKEND_URL;
 const DomainUrl = process.env.DOMAIN_URL
+const keyIndex = 1
  
 export const createBookingByClient = async (req, res) => {
   try { 
@@ -99,6 +101,7 @@ export const createBookingByClient = async (req, res) => {
   }
 };
 
+// https://roomescapeserver.vercel.app/api/v1/phone-pay/redirect/MT67e3e53884db8c70cf6eb633  
 
 export const phonePePaymentredirect = async (req, res) => {
   console.log("req.body", req.body);
@@ -106,6 +109,8 @@ export const phonePePaymentredirect = async (req, res) => {
   const merchantTransactionId = req.params.txnId
   // const orderId = req.params.orderId
   // const userId = req.params.userId
+  console.log("merche txnId", merchantTransactionId);
+  
   const merchantId = MERCHANT_ID
   const string = `/pg/v1/status/${merchantId}/${merchantTransactionId}` + SALT_KEY;
   const sha256 = crypto.createHash('sha256').update(string).digest('hex');
@@ -122,15 +127,20 @@ export const phonePePaymentredirect = async (req, res) => {
   };
   axios.request(options).then(async (response) => { 
       if (response.data.success === true) { 
+        console.log("success");
+        
           return res.redirect(`${DomainUrl}/payment-success`)
           // return res.redirect(`${DomainUrl}/order-confirmed/${orderId}`)
       } else {
+          console.log("failed");
           
           return res.redirect(`${DomainUrl}/payment-failed`)
           // return res.redirect(`${DomainUrl}/payment-failed`)
       }
   })
       .catch((error) => {
+        console.log("error");
+        
           console.log(error);
           return res.redirect(`${DomainUrl}/payment-failed`)
       }); 
