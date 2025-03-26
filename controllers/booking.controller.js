@@ -21,8 +21,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
-const SALT_KEY = process.env.PHONEPE_SALT_KEY;
-// const PaymentUrl = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
+const SALT_KEY = process.env.PHONEPE_SALT_KEY; 
 const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
 const SERVERURL = process.env.BACKEND_URL;
 const DomainUrl = process.env.DOMAIN_URL
@@ -47,10 +46,7 @@ export const createBookingByClient = async (req, res) => {
       // **PhonePe Payment Processing**
       const amount =  100; // Convert to paise 
       const merchantTransactionId = `MT${bookingData._id}`;
-      const merchantUserId = `MUID${bookingData._id}`; // Unique user ID
-
-      console.log("merchantTransactionId", merchantTransactionId);
-      console.log("merchantUserId", merchantUserId); 
+      const merchantUserId = `MUID${bookingData._id}`;  
 
       const paymentData = {
           merchantId: MERCHANT_ID,
@@ -88,6 +84,7 @@ export const createBookingByClient = async (req, res) => {
       // Send request to PhonePe
       axios.request(options)
           .then(async (response) => { 
+              await bookingData.save()
               return res.json(response.data)
           })
           .catch((error) => {
@@ -110,6 +107,8 @@ export const phonePePaymentredirect = async (req, res) => {
   // const orderId = req.params.orderId
   // const userId = req.params.userId
   console.log("merche txnId", merchantTransactionId);
+  console.log("booking Id", merchantTransactionId.replace(/^MT/, ""));
+  
   
   const merchantId = MERCHANT_ID
   const string = `/pg/v1/status/${merchantId}/${merchantTransactionId}` + SALT_KEY;
