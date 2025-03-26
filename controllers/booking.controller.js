@@ -122,17 +122,17 @@ export const phonePePaymentredirect = async (req, res) => {
   };
   axios.request(options).then(async (response) => { 
       if (response.data.success === true) { 
-          return res.redirect(`${DomainUrl}/booking`)
+          return res.redirect(`${DomainUrl}/payment-success`)
           // return res.redirect(`${DomainUrl}/order-confirmed/${orderId}`)
       } else {
           
-          return res.redirect(`${DomainUrl}/coupon`)
+          return res.redirect(`${DomainUrl}/payment-failed`)
           // return res.redirect(`${DomainUrl}/payment-failed`)
       }
   })
       .catch((error) => {
           console.log(error);
-          return res.redirect(`${DomainUrl}`)
+          return res.redirect(`${DomainUrl}/payment-failed`)
       }); 
 }
  
@@ -159,10 +159,10 @@ export const phonePePaymentCallback = async (req, res) => {
 
         if (code === "PAYMENT_SUCCESS") {
             // Update booking status in the database
-            await BookingModel.findOneAndUpdate(
-                { _id: merchantTransactionId.replace("MT", "") }, 
-                { paymentStatus: "Success", transactionId: merchantTransactionId }
-            );
+            // await BookingModel.findOneAndUpdate(
+            //     { _id: merchantTransactionId.replace("MT", "") }, 
+            //     { paymentStatus: "Success", transactionId: merchantTransactionId }
+            // );
 
             console.log("Payment successful, booking updated.");
             return res.status(200).json({ success: true, message: "Payment successful" });
