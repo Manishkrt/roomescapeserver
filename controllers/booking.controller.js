@@ -22,8 +22,8 @@ dotenv.config();
 
 const MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID;
 const SALT_KEY = process.env.PHONEPE_SALT_KEY;
-const PaymentUrl = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
-// const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
+// const PaymentUrl = "https://api-preprod.phonepe.com/apis/pg-sandbox"; 
+const PaymentUrl = "https://api.phonepe.com/apis/hermes"; 
 const SERVERURL = process.env.BACKEND_URL;
 const DomainUrl = process.env.DOMAIN_URL
 const keyIndex = 1
