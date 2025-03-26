@@ -175,45 +175,7 @@ export const phonePePaymentCallback = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
-
-
-
  
-export const phonePePaymentCallback1 = async (req, res) => {
-
-  console.log(req.body);
-  
-  return res.status(200).json({message:"success"})
-  try {
-    const { transactionId, status } = req.body; // Data received from PhonePe
-
-    if (!transactionId || !status) {
-      return res.status(400).json({ error: "Invalid request data" });
-    }
-
-    // Find the booking associated with this transaction
-    const booking = await BookingModel.findOne({ transactionId });
-
-    if (!booking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
-
-    // Update booking status based on payment status
-    if (status === "SUCCESS") {
-      booking.paymentType = "online";
-    } else {
-      booking.paymentType = "failed";
-    }
-
-    await booking.save();
-
-    return res.status(200).json({ message: "Payment status updated", booking });
-  } catch (error) {
-    console.error("Payment Callback Error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
 
 // Fetch bookings with populated game name
 export const getBookings = async (req, res) => {
@@ -385,27 +347,10 @@ export const checkTotalPrice = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+ 
 
 
-
-// export const createBookingByClient = async (req, res) => {
-//   try {
-//     const newBooking = new BookingModel({ ...req.body })
-//     await newBooking.save()
-//     res.status(201).json({ message: "bookig created", booking: newBooking });
-//   } catch (error) {
-//     console.error("Error in createBookingByAdmin:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-
-
-
-
-
-export const createBookingByAdmin = async (req, res) => {
-  console.log("booking Data", req.body);
+export const createBookingByAdmin = async (req, res) => { 
   try {
     const newBooking = new BookingModel({ ...req.body })
     await newBooking.save()
@@ -453,6 +398,7 @@ export const getBookingBySingleDate = async (req, res) => {
           },
           bookings: {
             $push: {
+              bookingId : "$_id",
               numberOfPeople: "$numberOfPeople",
               totalPrice: "$totalPrice",
               finalPrice: "$finalPrice",
@@ -465,7 +411,8 @@ export const getBookingBySingleDate = async (req, res) => {
               phone: "$phone",
               couponCode: "$couponCode",
               createdAt: "$createdAt",
-              updatedAt: "$updatedAt"
+              updatedAt: "$updatedAt",
+              advancePay: "$advancePay"
             }
           }
         }
