@@ -7,13 +7,10 @@ import GameModel from '../models/game.model.js'
 import PricingModel from '../models/pricing.model.js';
 import PublicHolidayModel from '../models/publicHolidays.model.js';
 import TimeSlotModel from '../models/timeSlot.model.js';
+import CanceledBookingModel from '../models/cancelBooking.model.js';
 
 
-import axios from "axios";
-import { PhonePeService } from '../config/phonePeService.js';
-import { v4 as uuidv4 } from "uuid";
-
- 
+import axios from "axios"; 
 import crypto from "crypto";
 import dotenv from "dotenv";
  
@@ -26,6 +23,41 @@ const PaymentUrl = "https://api.phonepe.com/apis/hermes";
 const SERVERURL = process.env.BACKEND_URL;
 const DomainUrl = process.env.DOMAIN_URL
 const keyIndex = 1
+
+const cancelBooking = async (bookingId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try { 
+
+      // Find the booking
+      const booking = await BookingModel.findById(bookingId).session(session);
+      if (!booking) {
+          await session.abortTransaction();
+          session.endSession();
+          return 
+      }
+
+      // Move booking to CanceledBookings collection
+      const canceledBooking = new CanceledBookingModel(booking.toObject());
+      canceledBooking.onlinePaymentStatus = "failed"
+      await canceledBooking.save({ session });
+
+      // Delete from original Booking collection
+      await BookingModel.deleteOne({ _id: bookingId }, { session });
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      return  
+
+  } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return
+  }
+};
  
 export const createBookingByClient = async (req, res) => {
   try { 
@@ -33,6 +65,7 @@ export const createBookingByClient = async (req, res) => {
           game, bookingDate, timeSlot, timeSlotId, numberOfPeople, totalPrice, finalPrice, 
           discountPrice, advancePay, paymentType, name, email, phone, couponCode, bookingBy
       } = req.body;
+      finalPrice
 
       // Ensure time slot is not double booked
       const existingBooking = await BookingModel.findOne({ game, bookingDate, timeSlotId });
@@ -41,7 +74,7 @@ export const createBookingByClient = async (req, res) => {
       }
 
       // Create a new booking
-      const bookingData = new BookingModel({ game, bookingDate, timeSlot, timeSlotId, numberOfPeople, totalPrice, finalPrice, discountPrice, advancePay, paymentType, name, email, phone, couponCode, bookingBy
+      const bookingData = new BookingModel({ game, bookingDate, timeSlot, timeSlotId, numberOfPeople, totalPrice, finalPrice, discountPrice, advancePay, paymentType, name, email, phone, couponCode, bookingBy, onlinePaymentStatus : "pending"
       }); 
       // **PhonePe Payment Processing**
       const amount =  100; // Convert to paise 
@@ -100,14 +133,10 @@ export const createBookingByClient = async (req, res) => {
 
 // https://roomescapeserver.vercel.app/api/v1/phone-pay/redirect/MT67e3e53884db8c70cf6eb633  
 
-export const phonePePaymentredirect = async (req, res) => {
-  console.log("req.body", req.body);
-  
-  const merchantTransactionId = req.params.txnId
-  // const orderId = req.params.orderId
-  // const userId = req.params.userId
-  console.log("merche txnId", merchantTransactionId);
-  console.log("booking Id", merchantTransactionId.replace(/^MT/, ""));
+export const phonePePaymentredirect = async (req, res) => { 
+  const merchantTransactionId = req.params.txnId  
+
+  const bookingID = merchantTransactionId.replace(/^MT/, "")
   
   
   const merchantId = MERCHANT_ID
@@ -124,16 +153,22 @@ export const phonePePaymentredirect = async (req, res) => {
           'X-MERCHANT-ID': `${merchantId}`
       }
   };
+
+
   axios.request(options).then(async (response) => { 
       if (response.data.success === true) { 
-        console.log("success");
-        
+          console.log("success");
+
+          const booking = await BookingModel.findById(bookingID)
+          booking.onlinePaymentStatus = "success"
+          await booking.save() 
           return res.redirect(`${DomainUrl}/payment-success`)
           // return res.redirect(`${DomainUrl}/order-confirmed/${orderId}`)
       } else {
-          console.log("failed");
-          
-          return res.redirect(`${DomainUrl}/payment-failed`)
+          console.log("failed"); 
+           res.redirect(`${DomainUrl}/payment-failed`)
+           cancelBooking(bookingID)
+           return
           // return res.redirect(`${DomainUrl}/payment-failed`)
       }
   })
@@ -141,7 +176,9 @@ export const phonePePaymentredirect = async (req, res) => {
         console.log("error");
         
           console.log(error);
-          return res.redirect(`${DomainUrl}/payment-failed`)
+          res.redirect(`${DomainUrl}/payment-failed`)
+          cancelBooking(bookingID)
+          return 
       }); 
 }
  

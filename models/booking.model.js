@@ -73,7 +73,11 @@ const bookingSchema = new mongoose.Schema({
     couponCode: {
         type: String, 
         trim: true,  
-      }
+      },
+    onlinePaymentStatus : {
+        type :String,
+        enum: ['pending', 'success', 'failed']
+    }
 },
     {
         timestamps: true
